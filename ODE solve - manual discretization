@@ -1,0 +1,39 @@
+from pyomo.environ import *
+from pyomo.dae import *
+import numpy as np
+
+m = ConcreteModel() 
+t = np.linspace(0, 24, 25)
+m.t = ContinuousSet(initialize=t)
+m.x = Var(m.t)
+m.ht = Param(initialize=1)
+
+m.dxdt = Var(m.t)
+
+## Define the ODE equation
+def _ode(m, k):
+    return m.dxdt[k]==5*m.x[k] - 3 
+
+## Define the discretization scheme
+def _ode_discr(m, k):
+    if k==0:
+        return Constraint.Skip
+    return m.x[k] == m.x[k-1] + m.ht*m.dxdt[k-1]
+
+def _initial_cond(m):
+    return m.x[0]==0.2  
+m.initial_cond = Constraint(rule=_initial_cond) 
+
+sol=[]  ## Solution storage
+
+# Iterative solve()
+for t in m.t:
+    if 'ode' and 'ode_discr' in m.component_map():
+        m.del_component(m.ode)
+        m.del_component(m.ode_discr)
+    m.ode = Constraint(m.t, rule=_ode)
+    m.ode_discr = Constraint(m.t, rule=_ode_discr) 
+    solver = SolverFactory("glpk")
+    solver.solve(m, tee=False) 
+    sol.append(value(m.x[t]))
+print(sol)
