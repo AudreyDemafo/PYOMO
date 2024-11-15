@@ -1,3 +1,4 @@
+```
 from pyomo.environ import *
 from pyomo.dae import *
 import numpy as np
@@ -37,3 +38,4 @@ for t in m.t:
     solver.solve(m, tee=False) 
     sol.append(value(m.x[t]))
 print(sol)
+```
